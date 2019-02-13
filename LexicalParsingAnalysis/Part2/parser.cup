@@ -1,0 +1,118 @@
+/* Simple +/-/* expression language; parser evaluates constant expressions on the fly*/
+/**
+ *  Package and Import Specifications
+ */
+import java_cup.runtime.*;
+
+/**
+ *  Usercode Components
+ */
+parser code {:
+    // Connect this parser to a scanner!
+    Scanner s;
+    Parser(Scanner s){ this.s=s; }
+:}
+
+/* define how to connect to the scanner! */
+scan with {: return s.next_token(); :};
+
+/**
+ *  Symbol Lists
+ */
+
+/* Terminals (tokens returned by the scanner). */
+terminal            PLUS,LPAREN,RPAREN,LBRACKET,RBRACKET,COMA,IF,ELSE,EQUAL,IN;
+terminal String IDENTIFIER,CONSTANT;
+
+non terminal String        
+
+Prog,Defs,Calls,Def,Call1,Call2,Arglist1,Arglist2,Arglist3,EmptyArglist,Expr,Expr2,Condition,Condition2,Rest1,Rest2,Rest3;
+
+/**
+ *  Precedence Declarations
+ */
+
+ precedence left PLUS;
+
+
+/**
+ *  The Grammar Rules
+ */
+
+Prog ::= Defs:d Calls:c   
+{: System.out.println("import java.util.*;\n\npublic class Main {\n" + d  + c + "\n}"); :}
+;
+
+Defs ::= Def:de Defs:dfs 		{: RESULT = de + dfs; :} 
+		| Call2:c2				
+		{: RESULT = "\npublic static void main(String[] args) {\n\n" + "System.out.println(" + c2 + ")" + ";\n"; :}
+;
+
+Calls ::= Call2:c2 Calls:c		{: RESULT = "System.out.println(" + c2 + ")" + ";\n" + c; :}
+		|  						{: RESULT = "}"; :}
+;
+
+Def ::= IDENTIFIER:id LPAREN Arglist3:arglist RPAREN LBRACKET Expr:expr RBRACKET
+		{: RESULT = "public static String " + id + "(" + arglist + ")" + "{" + "\n" + "return " + expr + ";" + "\n" + "}" + "\n"; :} 
+		| IDENTIFIER:id LPAREN EmptyArglist:arglist RPAREN LBRACKET Expr:expr RBRACKET
+		{: RESULT = "public static String " + id + "(" + ")" + "{" + "\n" + "return " + expr + ";" + "\n" + "}" + "\n"; :}
+; 
+
+Expr ::= IDENTIFIER:id 												{: RESULT = id; :}
+		| CONSTANT:c 												{: RESULT = c; :} 
+		| Expr:e1 PLUS Expr:e2 										{: RESULT = e1 + " + " + e2; :}
+		| Call1:c1 													{: RESULT = c1; :}
+		| IF LPAREN Condition:con RPAREN Expr:ex1 ELSE Expr:ex2
+		{: RESULT = "(" + con + ")" + "?" + ex1 + ":" + ex2; :}
+;
+
+
+Expr2 ::= CONSTANT:c												{: RESULT = c; :}
+		| Expr2:ex1 PLUS Expr2:ex2 									{: RESULT = ex1 + " + " + ex2; :}
+		| Call2:c2 													{: RESULT = c2; :}
+		| IF LPAREN Condition2:con RPAREN Expr2:ex1 ELSE Expr2:ex2 						
+		{: RESULT = "(" + con + ")" + "?" + ex1 + ":" + ex2; :}
+;
+
+
+Condition ::= Expr:ex1 EQUAL Expr:ex2 								{: RESULT = ex1 + ".equals(" + ex2 + ")"; :}
+		|	Expr:ex1 IN Expr:ex2									{: RESULT = ex2 + ".contains(" + ex1 + ")"; :}
+;
+
+Condition2 ::= Expr2:ex1 EQUAL Expr2:ex2 							{: RESULT = ex1 + ".equals(" + ex2 + ")"; :}
+		|	Expr2:ex1 IN Expr2:ex2 									{: RESULT = ex2 + ".contains(" + ex1 + ")"; :}
+;
+
+
+
+Call2 ::= IDENTIFIER:id LPAREN Arglist2:arglist RPAREN 			
+{: RESULT = id + "(" + arglist + ")"; :}
+		| IDENTIFIER:id LPAREN EmptyArglist RPAREN
+{: RESULT = id + "(" + ")"; :}
+;
+
+Call1 ::= IDENTIFIER:id LPAREN Arglist1:arglist RPAREN
+{: RESULT = id + "(" + arglist + ")"; :}
+		| IDENTIFIER:id LPAREN EmptyArglist:arglist RPAREN
+{: RESULT = id + "(" + ")"; :}
+;
+
+Arglist1 ::= Expr:e Rest1:r										{: RESULT = e + r; :}
+;							
+Rest1 ::= COMA Expr:e Rest1:r 									{: RESULT = "," + e + r; :}
+		| 														{: RESULT = ""; :}
+;
+
+Arglist2 ::=   Expr2:expr Rest2:rest							{: RESULT = expr + rest; :}
+;
+Rest2 ::= COMA Expr2:expr Rest2:rest							{: RESULT = "," + expr + rest; :}
+		| 														{: RESULT = ""; :}
+;
+
+Arglist3 ::=  IDENTIFIER:id Rest3:rest  						{: RESULT = "String " + id + rest; :}
+;
+Rest3 ::= COMA IDENTIFIER:id Rest3:rest 						{: RESULT = "," + "String " + id + rest; :}
+		| 														{: RESULT = ""; :}
+;
+
+EmptyArglist ::= {: RESULT = ""; :};

@@ -334,13 +334,20 @@ That is, your program must compile to LLVM IR all .java files given as arguments
 Tips
 
 -->You will need to use a lot of registers in order to 'glue' expressions together. This means that each visitor will produce the code for storing the value of an expression to a register, and then return the name of that register so that other expressions may use it, if necessary.
+
 -->Registers are single-assignment. This means you can only write to them once (but read any number of times). This also implies that registers cannot be used for local variables of the source program. Instead, you will allocate space on the stack using alloca and keep the address in a register. You will use the load and  store instructions to read and write to that local variable.
+
 -->Because registers are single-assignment, you will probably need to keep a counter to produce new ones. For example, you may produce registers of the form  %_1, %_2, etc.
+
 -->You will only support compilation to a 64-bit architecture: pointers are 8-bytes long.
 -->Everything new in Java is initialized to zeroes.
+
 Memory allocated with @calloc will leak since you're not implementing a Garbage Collector, but that's fine for this homework.
+
 -->You will need to check each array access in order not to write or read beyond the limits of an array. If an illegal read/write is attempted, you will print the message "Out of bounds" and the program will exit (you may call the @throw_oob defined below for that). Of course, you need to know the length of an array for that.
+
 -->You will also need to check if an array is allocated with a negative length, and do the same process as above in that case.
+
 -->You may see some examples of LLVM code produced for different Java input files here (corresponding to the earlier MiniJava examples from HW2).
 
 You may define the following helper methods once in your output files, in order to be able to call @calloc, @print_int and 
